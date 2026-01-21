@@ -30,5 +30,13 @@
         "name": "Oleksandr Parkhomei",
         "phone": "0662136045",
         "created_at": "2026-01-21T16:18:50+00:00"
+    },
+    {
+        "id": "14295025466970fcd6739244.66008433",
+        "email": "sasaparhomej@gmail.com",
+        "password": "$2y$10$mstR95x7rhWB7w259rz.gOSOQtQxD83xVqCXjYkcp9FEZRNNiugny",
+        "name": "Oleksandr Parkhomei",
+        "phone": "0662136045",
+        "created_at": "2026-01-21T16:20:38+00:00"
     }
 ]
