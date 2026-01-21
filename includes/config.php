@@ -11,18 +11,18 @@ define('RESERVATIONS_FILE', DB_DIR . 'reservations.json');
 // Налаштування сессії
 define('SESSION_TIMEOUT', 3600); // 1 час
 
-// MySQL settings — update these values for your environment
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'strona');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+// PostgreSQL settings
+define('DB_URL', getenv('DATABASE_URL'));
 
 // Create PDO connection (optional — keep JSON fallback if DB not available)
 try {
-    $pdo = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4', DB_USER, DB_PASS, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
+    if (DB_URL) {
+        $pdo = new PDO(DB_URL);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    } else {
+        $pdo = null;
+    }
 } catch (PDOException $e) {
     $pdo = null;
 }
