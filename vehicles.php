@@ -8,19 +8,16 @@ if (!isLoggedIn()) {
 $vehicles = loadJSON(VEHICLES_FILE);
 $reservations = loadJSON(RESERVATIONS_FILE);
 
-// Визначення статусу кожного автомобіля
 foreach ($vehicles as $key => $vehicle) {
     $vehicles[$key]['is_available'] = true;
     $vehicles[$key]['category'] = $vehicle['category'] ?? 'economy';
 
     foreach ($reservations as $res) {
-        // Перевіряємо тільки підтверджені резервації
         if ($res['vehicle_id'] === $vehicle['id'] && $res['status'] === 'confirmed') {
             $today = date('Y-m-d');
             $start_date = $res['start_date'] ?? '';
             $end_date = $res['end_date'] ?? '';
             
-            // Автомобіль недоступний, якщо сьогоднішня дата в межах резервації
             if ($start_date && $end_date && $today >= $start_date && $today <= $end_date) {
                 $vehicles[$key]['is_available'] = false;
                 break;
@@ -29,7 +26,6 @@ foreach ($vehicles as $key => $vehicle) {
     }
 }
 
-// Group vehicles by category
 $categories = ['economy', 'comfort', 'luxury', 'motorcycle'];
 $vehicles_by_category = [];
 foreach ($categories as $cat) {
@@ -38,21 +34,20 @@ foreach ($categories as $cat) {
 
 foreach ($vehicles as $vehicle) {
     $cat = $vehicle['category'] ?? 'economy';
-    if (!isset($vehicles_by_category[$cat])) {
-        $vehicles_by_category[$cat] = [];
+    if (isset($vehicles_by_category[$cat])) {
+        $vehicles_by_category[$cat][] = $vehicle;
     }
-    $vehicles_by_category[$cat][] = $vehicle;
 }
 ?>
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="<?php echo current_lang(); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <title>Доступні Автомобілі - Прокат Автомобілів</title>
+    <title><?php echo htmlspecialchars(t('available_vehicles')); ?> - <?php echo htmlspecialchars(t('site_title')); ?></title>
     <link rel="stylesheet" href="css/style.css?v=<?php echo time(); ?>">
     <style>
     .vehicles-controls { margin: 12px 0; }
@@ -67,22 +62,21 @@ foreach ($vehicles as $vehicle) {
             <h1><?php echo htmlspecialchars(t('available_vehicles')); ?></h1>
         </div>
         
-        <!-- Category Tabs -->
         <div class="tabs-container">
             <div class="tabs-nav">
-                <button class="tab-btn active" data-category="economy"><?php echo htmlspecialchars(t('category_economy')); ?></button>
-                <button class="tab-btn" data-category="comfort"><?php echo htmlspecialchars(t('category_comfort')); ?></button>
-                <button class="tab-btn" data-category="luxury"><?php echo htmlspecialchars(t('category_luxury')); ?></button>
-                <button class="tab-btn" data-category="motorcycle"><?php echo htmlspecialchars(t('category_motorcycle')); ?></button>
+                <?php foreach ($categories as $index => $category): ?>
+                    <button class="tab-btn <?php echo $index === 0 ? 'active' : ''; ?>" data-category="<?php echo $category; ?>">
+                        <?php echo htmlspecialchars(t('category_' . $category)); ?>
+                    </button>
+                <?php endforeach; ?>
             </div>
         </div>
 
-        <!-- Tab Content -->
         <?php foreach ($categories as $index => $category): ?>
             <div class="tab-content <?php echo $index === 0 ? 'active' : ''; ?>" id="tab-<?php echo $category; ?>" data-category="<?php echo $category; ?>">
                 <?php if (empty($vehicles_by_category[$category])): ?>
                     <div class="empty-state">
-                        <p><?php echo sprintf(htmlspecialchars(t('no_reservations')), htmlspecialchars(t('category_' . $category))); ?></p>
+                        <p><?php echo htmlspecialchars(t('no_reservations')); ?></p>
                     </div>
                 <?php else: ?>
                     <div class="vehicles-controls">
@@ -104,8 +98,7 @@ foreach ($vehicles as $vehicle) {
                                  data-price="<?php echo htmlspecialchars($vehicle['price_per_day']); ?>"
                                  data-year="<?php echo htmlspecialchars($vehicle['year']); ?>"
                                  data-seats="<?php echo htmlspecialchars($vehicle['seats']); ?>"
-                                 data-name="<?php echo htmlspecialchars($vehicle['name']); ?>"
-                                 data-image="<?php echo htmlspecialchars($vehicle['image']); ?>">
+                                 data-name="<?php echo htmlspecialchars($vehicle['name']); ?>">
                                 <div class="vehicle-image">
                                     <img src="images/<?php echo htmlspecialchars($vehicle['image']); ?>" alt="<?php echo htmlspecialchars($vehicle['name']); ?>">
                                     <div class="vehicle-status">
@@ -115,7 +108,6 @@ foreach ($vehicles as $vehicle) {
                                 
                                 <div class="vehicle-content">
                                     <h3><?php echo htmlspecialchars($vehicle['name']); ?></h3>
-                                    
                                     <div class="vehicle-specs">
                                         <p><span class="label"><?php echo htmlspecialchars(t('model_label')); ?>:</span> <?php echo htmlspecialchars($vehicle['model']); ?></p>
                                         <p><span class="label"><?php echo htmlspecialchars(t('year_label')); ?>:</span> <?php echo htmlspecialchars($vehicle['year']); ?></p>
@@ -123,7 +115,6 @@ foreach ($vehicles as $vehicle) {
                                         <p><span class="label"><?php echo htmlspecialchars(t('seats_label')); ?>:</span> <?php echo htmlspecialchars($vehicle['seats']); ?></p>
                                         <p><span class="label"><?php echo htmlspecialchars(t('transmission_label')); ?>:</span> <?php echo htmlspecialchars($vehicle['transmission']); ?></p>
                                     </div>
-                                    
                                     <div class="vehicle-footer">
                                         <span class="price"><?php echo htmlspecialchars($vehicle['price_per_day']); ?> PLN/<?php echo htmlspecialchars(t('per_day')); ?></span>
                                         <?php if ($vehicle['is_available']): ?>
@@ -143,54 +134,23 @@ foreach ($vehicles as $vehicle) {
     
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        try {
         const tabButtons = document.querySelectorAll('.tab-btn');
-
-        // Ensure only one active tab at start
-        const activeTabs = Array.from(document.querySelectorAll('.tab-content.active'));
-        if (activeTabs.length > 1) {
-            activeTabs.forEach((el, idx) => {
-                if (idx !== 0) el.classList.remove('active');
-            });
-        }
-        
         tabButtons.forEach(btn => {
             btn.addEventListener('click', function() {
                 const category = this.getAttribute('data-category');
-                
-                // Hide all tabs
-                document.querySelectorAll('.tab-content').forEach(tab => {
-                    tab.classList.remove('active');
-                });
-                
-                // Remove active class from all buttons
-                document.querySelectorAll('.tab-btn').forEach(b => {
-                    b.classList.remove('active');
-                });
-                
-                // Show selected tab
+                document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 const selectedTab = document.getElementById('tab-' + category);
-                if (selectedTab) {
-                    // remove any other accidental active classes
-                    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                    selectedTab.classList.add('active');
-                }
-                
-                // Add active class to clicked button
+                if (selectedTab) selectedTab.classList.add('active');
                 this.classList.add('active');
             });
         });
 
-        // Sorting
         document.querySelectorAll('.sort-select').forEach(sel => {
             sel.addEventListener('change', function() {
                 sortVehicles(this.getAttribute('data-category'), this.value);
             });
         });
-
-        } catch (err) {
-            // Silently handle errors
-        }
 
         function sortVehicles(category, mode) {
             const grid = document.querySelector('#tab-' + category + ' .vehicles-grid');
@@ -203,22 +163,19 @@ foreach ($vehicles as $vehicle) {
                 const yb = parseInt(b.getAttribute('data-year')) || 0;
                 const sa = parseInt(a.getAttribute('data-seats')) || 0;
                 const sb = parseInt(b.getAttribute('data-seats')) || 0;
-                const na = (a.getAttribute('data-name') || '').toLowerCase();
-                const nb = (b.getAttribute('data-name') || '').toLowerCase();
                 switch(mode) {
                     case 'price_asc': return pa - pb;
                     case 'price_desc': return pb - pa;
                     case 'year_newest': return yb - ya;
                     case 'year_oldest': return ya - yb;
                     case 'seats_desc': return sb - sa;
-                    default: return na.localeCompare(nb);
+                    default: return 0;
                 }
             });
             items.forEach(i => grid.appendChild(i));
         }
     });
     </script>
-    
     <?php include 'includes/footer.php'; ?>
 </body>
 </html>

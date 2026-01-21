@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = trim($_POST['password'] ?? '');
     
     if (empty($email) || empty($password)) {
-        $error = 'Заповніть всі поля';
+        $error = t('fill_all_fields');
     } else {
         try {
             $user = null;
@@ -17,7 +17,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $user = findUserByEmail($email);
             }
             
-            // If not found in DB, try JSON
             if (!$user) {
                 $all = loadJSON(USERS_FILE);
                 foreach ($all as $u) {
@@ -36,23 +35,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     session_write_close();
                     redirect('index.php');
                 } else {
-                    $error = 'Невірний пароль';
+                    $error = t('invalid_password');
                 }
             } else {
-                $error = 'Користувач не знайдений';
+                $error = t('user_not_found');
             }
         } catch (Exception $e) {
-            $error = 'Помилка аутентифікації: ' . $e->getMessage();
+            $error = t('auth_error') . ': ' . $e->getMessage();
         }
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="<?php echo current_lang(); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Логування - Прокат Автомобілів</title>
+    <title><?php echo htmlspecialchars(t('login_title')); ?> - <?php echo htmlspecialchars(t('site_title')); ?></title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -68,23 +67,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <form method="POST">
                 <div class="form-group">
                     <label for="email"><?php echo htmlspecialchars(t('email_label')); ?></label>
-                    <input 
-                        type="email" 
-                        id="email" 
-                        name="email" 
-                        value="<?php echo htmlspecialchars($email); ?>" 
-                        required
-                    >
+                    <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
                 </div>
                 
                 <div class="form-group">
                     <label for="password"><?php echo htmlspecialchars(t('password_label')); ?></label>
-                    <input 
-                        type="password" 
-                        id="password" 
-                        name="password" 
-                        required
-                    >
+                    <input type="password" id="password" name="password" required>
                 </div>
                 
                 <button type="submit" class="btn btn-primary"><?php echo htmlspecialchars(t('login_button')); ?></button>

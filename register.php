@@ -14,7 +14,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = trim($_POST['password'] ?? '');
     $password_confirm = trim($_POST['password_confirm'] ?? '');
     
-    // Валідація
     if (empty($name) || empty($email) || empty($phone) || empty($password)) {
         $error = t('fill_all_fields');
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -65,11 +64,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="<?php echo current_lang(); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Реєстрація - Прокат Автомобілів</title>
+    <title><?php echo htmlspecialchars(t('registration')); ?> - <?php echo htmlspecialchars(t('site_title')); ?></title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -91,55 +90,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <form method="POST">
                     <div class="form-group">
                         <label for="name"><?php echo htmlspecialchars(t('full_name_label')); ?></label>
-                        <input 
-                            type="text" 
-                            id="name" 
-                            name="name" 
-                            value="<?php echo htmlspecialchars($name); ?>" 
-                            required
-                        >
+                        <input type="text" id="name" name="name" value="<?php echo htmlspecialchars($name); ?>" required>
                     </div>
                     
                     <div class="form-group">
                         <label for="email"><?php echo htmlspecialchars(t('email_label')); ?></label>
-                        <input 
-                            type="email" 
-                            id="email" 
-                            name="email" 
-                            value="<?php echo htmlspecialchars($email); ?>" 
-                            required
-                        >
+                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
                     </div>
                     
                     <div class="form-group">
                         <label for="phone"><?php echo htmlspecialchars(t('phone_label')); ?></label>
-                        <input 
-                            type="tel" 
-                            id="phone" 
-                            name="phone" 
-                            value="<?php echo htmlspecialchars($phone); ?>" 
-                            required
-                        >
+                        <input type="tel" id="phone" name="phone" value="<?php echo htmlspecialchars($phone); ?>" required>
                     </div>
                     
                     <div class="form-group">
                         <label for="password"><?php echo htmlspecialchars(t('password_label')); ?></label>
-                        <input 
-                            type="password" 
-                            id="password" 
-                            name="password" 
-                            required
-                        >
+                        <input type="password" id="password" name="password" required>
                     </div>
                     
                     <div class="form-group">
                         <label for="password_confirm"><?php echo htmlspecialchars(t('password_confirm_label')); ?></label>
-                        <input 
-                            type="password" 
-                            id="password_confirm" 
-                            name="password_confirm" 
-                            required
-                        >
+                        <input type="password" id="password_confirm" name="password_confirm" required>
                     </div>
                     
                     <button type="submit" class="btn btn-primary"><?php echo htmlspecialchars(t('register_button')); ?></button>
