@@ -31,15 +31,29 @@ function findUserByEmail($email) {
 
 function createUser($name, $email, $passwordHash, $phone = null) {
     global $pdo;
+    
+    // Always save to JSON first to ensure fallback works
+    $users = loadJSON(USERS_FILE);
+    $new_user = [
+        'id' => generateID(),
+        'email' => $email,
+        'password' => $passwordHash,
+        'name' => $name,
+        'phone' => $phone,
+        'created_at' => date('c')
+    ];
+    $users[] = $new_user;
+    saveJSON(USERS_FILE, $users);
+
     if (!$pdo) {
-        return null;
+        return $new_user['id'];
     }
     try {
         $stmt = $pdo->prepare('INSERT INTO users (name,email,password,phone,created_at) VALUES (?,?,?,?,NOW())');
         $stmt->execute([$name,$email,$passwordHash,$phone]);
-        return $pdo->lastInsertId();
+        return $pdo->lastInsertId() ?: $new_user['id'];
     } catch (PDOException $e) {
-        return null;
+        return $new_user['id'];
     }
 }
 
