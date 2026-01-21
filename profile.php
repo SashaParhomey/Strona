@@ -1,0 +1,106 @@
+<?php
+require_once __DIR__ . '/includes/config.php';
+
+if (!isLoggedIn()) {
+    redirect('login.php');
+}
+
+$user = getCurrentUser();
+$error = '';
+$success = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = trim($_POST['name'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    
+    if (empty($name) || empty($phone)) {
+        $error = t('fill_all_fields');
+    } else {
+        $users = loadJSON(USERS_FILE);
+        
+        foreach ($users as &$u) {
+            if ($u['id'] === $user['id']) {
+                $u['name'] = $name;
+                $u['phone'] = $phone;
+                $_SESSION['user_name'] = $name;
+                $user = $u;
+                break;
+            }
+        }
+        
+        saveJSON(USERS_FILE, $users);
+        $success = t('profile_updated');
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мій Профіль - Прокат Автомобілів</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <?php include 'includes/header.php'; ?>
+    
+    <main class="container">
+        <div class="page-header">
+            <h1><?php echo htmlspecialchars(t('profile')); ?></h1>
+        </div>
+        
+        <div class="profile-container">
+            <div class="profile-box">
+                <h2><?php echo htmlspecialchars(t('profile_information')); ?></h2>
+                
+                <?php if ($error): ?>
+                    <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
+                <?php endif; ?>
+                
+                <?php if ($success): ?>
+                    <div class="success-message"><?php echo htmlspecialchars($success); ?></div>
+                <?php endif; ?>
+                
+                <form method="POST">
+                    <div class="form-group">
+                        <label for="email"><?php echo htmlspecialchars(t('email_label')); ?></label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            value="<?php echo htmlspecialchars($user['email']); ?>" 
+                            disabled
+                        >
+                        <small><?php echo htmlspecialchars(t('email_cannot_change')); ?></small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="name"><?php echo htmlspecialchars(t('full_name_label')); ?></label>
+                        <input 
+                            type="text" 
+                            id="name" 
+                            name="name" 
+                            value="<?php echo htmlspecialchars($user['name']); ?>" 
+                            required
+                        >
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone"><?php echo htmlspecialchars(t('phone_label')); ?></label>
+                        <input 
+                            type="tel" 
+                            id="phone" 
+                            name="phone" 
+                            value="<?php echo htmlspecialchars($user['phone']); ?>" 
+                            required
+                        >
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary"><?php echo htmlspecialchars(t('save_changes')); ?></button>
+                </form>
+            </div>
+        </div>
+    </main>
+    
+    <?php include 'includes/footer.php'; ?>
+</body>
+</html>
