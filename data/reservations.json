@@ -105,7 +105,7 @@
         "vehicle_id": "mazda_001",
         "start_date": "2026-01-21",
         "end_date": "2026-01-25",
-        "status": "confirmed",
+        "status": "cancelled",
         "total_price": 600,
         "created_at": "2026-01-21T16:22:04+00:00"
     }
