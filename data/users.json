@@ -6,6 +6,29 @@
         "name": "Oleksandr",
         "phone": "0662136045",
         "created_at": "2026-01-03T16:38:11+01:00"
+    },
+    {
+        "id": "14000401636970fc10c29b34.04516168",
+        "email": "sasaparhomej@gmail.com",
+        "password": "$2y$10$Z\/8wTZk\/zGBLTv18yLrnvODSb5RUkhWfxtJYZts4GSe4xDCT0Ph66",
+        "name": "Oleksandr Parkhomei",
+        "phone": "0662136045",
+        "created_at": "2026-01-21T16:17:20+00:00"
+    },
+    {
+        "id": "15471535436970fc2bcf4fc6.98309517",
+        "email": "sasaparhomej@gmail.com",
+        "password": "$2y$10$oXMtvBHsr22LI.V\/rouOhOEPpVij05Uv2N0gL7ye9cve6S5Oz8D9u",
+        "name": "Oleksandr Parkhomei",
+        "phone": "0662136045",
+        "created_at": "2026-01-21T16:17:47+00:00"
+    },
+    {
+        "id": "16378535406970fc6a05a1a6.17080867",
+        "email": "sashaparhomey@gmail.com",
+        "password": "$2y$10$fNa7aAfS3SoVPQm2rNlthuWOL76Wl6Md05vtQB508MtOujNySPmjO",
+        "name": "Oleksandr Parkhomei",
+        "phone": "0662136045",
+        "created_at": "2026-01-21T16:18:50+00:00"
     }
-    
 ]

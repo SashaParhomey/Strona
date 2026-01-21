@@ -15,9 +15,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user = null;
             if (function_exists('findUserByEmail')) {
                 $user = findUserByEmail($email);
-            } else {
+            }
+            
+            // If not found in DB, try JSON
+            if (!$user) {
                 $all = loadJSON(USERS_FILE);
-                foreach ($all as $u) if ($u['email'] === $email) { $user = $u; break; }
+                foreach ($all as $u) {
+                    if ($u['email'] === $email) {
+                        $user = $u;
+                        break;
+                    }
+                }
             }
 
             if ($user) {
@@ -25,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['user_id'] = $user['id'];
                     $_SESSION['user_email'] = $user['email'];
                     $_SESSION['user_name'] = $user['name'];
+                    session_write_close();
                     redirect('index.php');
                 } else {
                     $error = 'Невірний пароль';
@@ -33,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Користувач не знайдений';
             }
         } catch (Exception $e) {
-            $error = 'Помилка аутентифікації';
+            $error = 'Помилка аутентифікації: ' . $e->getMessage();
         }
     }
 }
