@@ -1,0 +1,2 @@
+# Apache: заборона прямого доступу до службових PHP-файлів
+Require all denied

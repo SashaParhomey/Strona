@@ -9,10 +9,11 @@ function get_available_langs() {
 
 function current_lang() {
     global $DEFAULT_LANG;
-    if (!empty($_SESSION['lang'])) {
+    $langs = get_available_langs();
+    if (!empty($_SESSION['lang']) && in_array($_SESSION['lang'], $langs, true)) {
         return $_SESSION['lang'];
     }
-    if (!empty($_COOKIE['lang'])) {
+    if (!empty($_COOKIE['lang']) && in_array($_COOKIE['lang'], $langs, true)) {
         return $_COOKIE['lang'];
     }
     return $DEFAULT_LANG;
@@ -20,19 +21,34 @@ function current_lang() {
 
 function set_language($lang) {
     global $AVAILABLE_LANGS;
-    if (!in_array($lang, $AVAILABLE_LANGS)) return false;
+    if (!in_array($lang, $AVAILABLE_LANGS, true)) return false;
     $_SESSION['lang'] = $lang;
-    setcookie('lang', $lang, time() + (3600 * 24 * 30), '/');
+    setcookie('lang', $lang, [
+        'expires' => time() + (3600 * 24 * 30),
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     return true;
 }
 
 // If lang is requested via GET, set it and redirect to clean URL
 if (isset($_GET['lang'])) {
     $req = $_GET['lang'];
-    if (in_array($req, get_available_langs())) {
+    if (is_string($req) && in_array($req, get_available_langs(), true)) {
         set_language($req);
     }
-    $url = strtok($_SERVER['REQUEST_URI'], '?');
+    $url = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
+    // Лише відносний шлях на цьому ж сайті
+    if (!is_string($url) || $url === '' || $url[0] !== '/' || str_starts_with($url, '//')) {
+        $url = '/';
+    }
+    // Зберігаємо інші параметри (наприклад, ?id= на сторінці резервації)
+    $params = $_GET;
+    unset($params['lang']);
+    if ($params) {
+        $url .= '?' . http_build_query($params);
+    }
     header('Location: ' . $url);
     exit;
 }
@@ -56,5 +72,3 @@ function t($key, ...$args) {
     }
     return $text;
 }
-
-?>

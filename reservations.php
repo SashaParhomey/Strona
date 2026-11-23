@@ -1,39 +1,34 @@
 <?php
 require_once __DIR__ . '/includes/config.php';
 
-if (!isLoggedIn()) {
-    redirect('login.php');
-}
-
+requireLogin();
 $user = getCurrentUser();
-if (!$user) {
-    redirect('login.php');
+
+$vehicles_by_id = [];
+foreach (loadJSON(VEHICLES_FILE) as $vehicle) {
+    $vehicles_by_id[$vehicle['id']] = $vehicle;
 }
 
-$reservations = loadJSON(RESERVATIONS_FILE);
-$vehicles = loadJSON(VEHICLES_FILE);
-
-// Фільтрування резервацій поточного користувача
+// Резервації поточного користувача, найновіші першими
 $user_reservations = [];
-foreach ($reservations as $res) {
-    if (($res['user_id'] === $user['id']) || ($res['user_id'] == $user['id'])) {
-        // Додаємо інформацію про транспортний засіб
-        foreach ($vehicles as $vehicle) {
-            if ($vehicle['id'] === $res['vehicle_id']) {
-                $res['vehicle'] = $vehicle;
-                break;
-            }
-        }
+foreach (loadJSON(RESERVATIONS_FILE) as $res) {
+    if ((string)$res['user_id'] === (string)$user['id']) {
+        $res['vehicle'] = $vehicles_by_id[$res['vehicle_id']] ?? null;
         $user_reservations[] = $res;
     }
 }
+usort($user_reservations, fn($a, $b) => strcmp($b['start_date'], $a['start_date']));
+
+$flash = $_SESSION['flash'] ?? null;
+unset($_SESSION['flash']);
+$today = date('Y-m-d');
 ?>
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="<?php echo current_lang(); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мої Резервації - Прокат Автомобілів</title>
+    <title><?php echo htmlspecialchars(t('my_reservations')); ?> - <?php echo htmlspecialchars(t('site_title')); ?></title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -44,6 +39,10 @@ foreach ($reservations as $res) {
             <h1><?php echo htmlspecialchars(t('my_reservations')); ?></h1>
         </div>
         
+        <?php if ($flash): ?>
+            <div class="<?php echo $flash['type'] === 'success' ? 'success-message' : 'error-message'; ?>"><?php echo htmlspecialchars($flash['text']); ?></div>
+        <?php endif; ?>
+
         <?php if (empty($user_reservations)): ?>
             <div class="empty-state">
                 <p><?php echo htmlspecialchars(t('no_reservations')); ?></p>
@@ -56,7 +55,7 @@ foreach ($reservations as $res) {
                         <div class="card-header">
                             <h3><?php echo htmlspecialchars($reservation['vehicle']['name'] ?? ''); ?></h3>
                             <span class="status status-<?php echo htmlspecialchars($reservation['status']); ?>">
-                                <?php echo htmlspecialchars(ucfirst($reservation['status'])); ?>
+                                <?php echo htmlspecialchars(t('status_' . $reservation['status'])); ?>
                             </span>
                         </div>
                         
@@ -75,12 +74,13 @@ foreach ($reservations as $res) {
                         </div>
                         
                         <div class="card-footer">
-                            <?php if ($reservation['status'] === 'confirmed'): ?>
-                                <a href="api/cancel_reservation.php?id=<?php echo urlencode($reservation['id']); ?>" 
-                                   class="btn btn-danger btn-sm" 
-                                   onclick="return confirm('Ви впевнені, що хочете скасувати резервацію?');">
-                                    <?php echo htmlspecialchars(t('cancel_button')); ?>
-                                </a>
+                            <?php if ($reservation['status'] === 'confirmed' && $reservation['end_date'] > $today): ?>
+                                <form method="POST" action="api/cancel_reservation.php"
+                                      onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(t('cancel_confirm'), JSON_UNESCAPED_UNICODE)); ?>);">
+                                    <?php echo csrf_field(); ?>
+                                    <input type="hidden" name="id" value="<?php echo htmlspecialchars($reservation['id']); ?>">
+                                    <button type="submit" class="btn btn-danger btn-sm"><?php echo htmlspecialchars(t('cancel_button')); ?></button>
+                                </form>
                             <?php endif; ?>
                         </div>
                     </div>

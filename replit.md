@@ -1,56 +1,19 @@
 # Strona - Car Rental System
 
-## Overview
-A PHP-based vehicle rental web application with multi-language support (Polish, English, Ukrainian). Users can register, login, browse available vehicles, and make reservations.
+PHP car rental site (PL/EN/UK). Users register, log in, browse vehicles, book them for dates and cancel bookings.
 
-## Project Structure
-```
-├── css/              # Stylesheets
-│   └── style.css
-├── data/             # JSON data storage
-│   ├── users.json
-│   ├── vehicles.json
-│   └── reservations.json
-├── images/           # Vehicle and logo images
-├── includes/         # PHP includes
-│   ├── config.php    # Main configuration
-│   ├── db.php        # Database helpers
-│   ├── lang.php      # Language system
-│   ├── header.php    # Page header
-│   ├── footer.php    # Page footer
-│   └── langs/        # Translation files
-│       ├── en.php
-│       ├── pl.php
-│       └── uk.php
-├── index.php         # Dashboard (requires login)
-├── login.php         # Login page
-├── register.php      # Registration page
-├── vehicles.php      # Browse vehicles
-├── reserve.php       # Make reservations
-├── reservations.php  # View reservations
-├── profile.php       # User profile
-└── schema.sql        # Database schema (optional)
-```
+See README.md for full documentation (in Ukrainian).
 
-## Running the Application
-The app runs on PHP's built-in server:
+## Running
 ```bash
-php -S 0.0.0.0:5000
+php -S 0.0.0.0:5000 router.php
 ```
+`router.php` must be used with the built-in server: it blocks public access to `data/` and `includes/`.
 
-## Data Storage
-- Primary: JSON files in `data/` directory
-- Optional: MySQL database (falls back to JSON if unavailable)
+## Data storage
+JSON files in `data/`. `vehicles.json` is tracked in git; `users.json` and `reservations.json` are created at runtime and are git-ignored (personal data). All writes go through `updateJSON()` in `includes/config.php`, which holds an exclusive file lock.
 
-## Languages
-- Polish (pl) - default
-- English (en)
-- Ukrainian (uk)
-
-Change language by appending `?lang=en` to any URL.
-
-## Recent Changes
-- 2026-01-21: Project restructured for Replit environment
-  - Created proper directory structure (includes/, css/, data/, images/)
-  - Moved language files to includes/langs/
-  - Configured PHP server on port 5000
+## Conventions
+- Every POST form includes `csrf_field()` and the handler checks `verify_csrf()`.
+- Protected pages call `requireLogin()`.
+- All UI strings go through `t('key')`; keys must exist in all three files in `includes/langs/`.
