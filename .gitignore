@@ -28,3 +28,9 @@ Thumbs.db
 .upm/
 .breakpoints
 .replit.nix
+
+# Дані користувачів і резервацій (особисті дані, не комітити)
+data/users.json
+data/reservations.json
+data/*.lock
+data/*.tmp

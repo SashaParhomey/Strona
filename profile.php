@@ -1,10 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/config.php';
 
-if (!isLoggedIn()) {
-    redirect('login.php');
-}
-
+requireLogin();
 $user = getCurrentUser();
 $error = '';
 $success = '';
@@ -12,33 +9,39 @@ $success = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
-    
-    if (empty($name) || empty($phone)) {
+
+    if (!verify_csrf()) {
+        $error = t('csrf_error');
+    } elseif ($name === '' || $phone === '') {
         $error = t('fill_all_fields');
+    } elseif (mb_strlen($name) > 100) {
+        $error = t('name_too_long');
+    } elseif (!preg_match('/^\+?[0-9 ()-]{6,20}$/', $phone)) {
+        $error = t('invalid_phone');
     } else {
-        $users = loadJSON(USERS_FILE);
-        
-        foreach ($users as &$u) {
-            if ($u['id'] === $user['id']) {
-                $u['name'] = $name;
-                $u['phone'] = $phone;
-                $_SESSION['user_name'] = $name;
-                $user = $u;
-                break;
+        $updated = updateJSON(USERS_FILE, function (&$users) use ($user, $name, $phone) {
+            foreach ($users as &$u) {
+                if ((string)$u['id'] === (string)$user['id']) {
+                    $u['name'] = $name;
+                    $u['phone'] = $phone;
+                    return $u;
+                }
             }
+            return null;
+        });
+        if ($updated) {
+            $user = $updated;
+            $success = t('profile_updated');
         }
-        
-        saveJSON(USERS_FILE, $users);
-        $success = t('profile_updated');
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="<?php echo current_lang(); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мій Профіль - Прокат Автомобілів</title>
+    <title><?php echo htmlspecialchars(t('profile')); ?> - <?php echo htmlspecialchars(t('site_title')); ?></title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -62,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endif; ?>
                 
                 <form method="POST">
+                    <?php echo csrf_field(); ?>
                     <div class="form-group">
                         <label for="email"><?php echo htmlspecialchars(t('email_label')); ?></label>
                         <input 
@@ -90,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             type="tel" 
                             id="phone" 
                             name="phone" 
-                            value="<?php echo htmlspecialchars($user['phone']); ?>" 
+                            value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>" 
                             required
                         >
                     </div>

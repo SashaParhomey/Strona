@@ -1,29 +1,26 @@
 <?php
 require_once __DIR__ . '/includes/config.php';
 
-if (!isLoggedIn()) {
-    redirect('login.php');
-}
+requireLogin();
 
 $vehicles = loadJSON(VEHICLES_FILE);
 $reservations = loadJSON(RESERVATIONS_FILE);
 
-foreach ($vehicles as $key => $vehicle) {
-    $vehicles[$key]['is_available'] = true;
-    $vehicles[$key]['category'] = $vehicle['category'] ?? 'economy';
+$today = date('Y-m-d');
 
-    foreach ($reservations as $res) {
-        if ($res['vehicle_id'] === $vehicle['id'] && $res['status'] === 'confirmed') {
-            $today = date('Y-m-d');
-            $start_date = $res['start_date'] ?? '';
-            $end_date = $res['end_date'] ?? '';
-            
-            if ($start_date && $end_date && $today >= $start_date && $today <= $end_date) {
-                $vehicles[$key]['is_available'] = false;
-                break;
-            }
-        }
+// Авто, зайняті сьогодні (дата повернення вже вільна)
+$busy_today = [];
+foreach ($reservations as $res) {
+    if (($res['status'] ?? '') === 'confirmed'
+        && ($res['start_date'] ?? '') <= $today
+        && $today < ($res['end_date'] ?? '')) {
+        $busy_today[$res['vehicle_id']] = true;
     }
+}
+
+foreach ($vehicles as $key => $vehicle) {
+    $vehicles[$key]['is_available'] = empty($busy_today[$vehicle['id']]);
+    $vehicles[$key]['category'] = $vehicle['category'] ?? 'economy';
 }
 
 $categories = ['economy', 'comfort', 'luxury', 'motorcycle'];
@@ -44,11 +41,8 @@ foreach ($vehicles as $vehicle) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
     <title><?php echo htmlspecialchars(t('available_vehicles')); ?> - <?php echo htmlspecialchars(t('site_title')); ?></title>
-    <link rel="stylesheet" href="css/style.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="css/style.css?v=<?php echo filemtime(__DIR__ . '/css/style.css'); ?>">
     <style>
     .vehicles-controls { margin: 12px 0; }
     .vehicles-controls label { font-weight: 500; }
@@ -76,7 +70,7 @@ foreach ($vehicles as $vehicle) {
             <div class="tab-content <?php echo $index === 0 ? 'active' : ''; ?>" id="tab-<?php echo $category; ?>" data-category="<?php echo $category; ?>">
                 <?php if (empty($vehicles_by_category[$category])): ?>
                     <div class="empty-state">
-                        <p><?php echo htmlspecialchars(t('no_reservations')); ?></p>
+                        <p><?php echo htmlspecialchars(t('no_vehicles_in_category')); ?></p>
                     </div>
                 <?php else: ?>
                     <div class="vehicles-controls">
@@ -100,9 +94,9 @@ foreach ($vehicles as $vehicle) {
                                  data-seats="<?php echo htmlspecialchars($vehicle['seats']); ?>"
                                  data-name="<?php echo htmlspecialchars($vehicle['name']); ?>">
                                 <div class="vehicle-image">
-                                    <img src="images/<?php echo htmlspecialchars($vehicle['image']); ?>" alt="<?php echo htmlspecialchars($vehicle['name']); ?>">
+                                    <img src="images/<?php echo htmlspecialchars($vehicle['image']); ?>" alt="<?php echo htmlspecialchars($vehicle['name']); ?>" loading="lazy">
                                     <div class="vehicle-status">
-                                        <?php echo $vehicle['is_available'] ? htmlspecialchars(t('available')) : htmlspecialchars(t('unavailable')); ?>
+                                        <?php echo $vehicle['is_available'] ? htmlspecialchars(t('available')) : htmlspecialchars(t('unavailable_today')); ?>
                                     </div>
                                 </div>
                                 
@@ -117,11 +111,10 @@ foreach ($vehicles as $vehicle) {
                                     </div>
                                     <div class="vehicle-footer">
                                         <span class="price"><?php echo htmlspecialchars($vehicle['price_per_day']); ?> PLN/<?php echo htmlspecialchars(t('per_day')); ?></span>
-                                        <?php if ($vehicle['is_available']): ?>
-                                            <a href="reserve.php?id=<?php echo urlencode($vehicle['id']); ?>" class="btn btn-primary btn-sm">
-                                                <?php echo htmlspecialchars(t('reserve_button')); ?>
-                                            </a>
-                                        <?php endif; ?>
+                                        <?php /* Авто, зайняте сьогодні, можна забронювати на інші дати */ ?>
+                                        <a href="reserve.php?id=<?php echo urlencode($vehicle['id']); ?>" class="btn btn-primary btn-sm">
+                                            <?php echo htmlspecialchars(t('reserve_button')); ?>
+                                        </a>
                                     </div>
                                 </div>
                             </div>

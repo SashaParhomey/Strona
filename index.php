@@ -1,18 +1,15 @@
 <?php
 require_once __DIR__ . '/includes/config.php';
 
-if (!isLoggedIn()) {
-    redirect('login.php');
-}
-
+requireLogin();
 $user = getCurrentUser();
 ?>
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="<?php echo current_lang(); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Головна - Прокат Автомобілів</title>
+    <title><?php echo htmlspecialchars(t('home')); ?> - <?php echo htmlspecialchars(t('site_title')); ?></title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>

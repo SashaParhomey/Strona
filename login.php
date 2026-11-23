@@ -4,44 +4,40 @@ require_once __DIR__ . '/includes/config.php';
 $error = '';
 $email = '';
 
+if (isLoggedIn() && getCurrentUser()) {
+    redirect('index.php');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
-    $password = trim($_POST['password'] ?? '');
-    
-    if (empty($email) || empty($password)) {
+    $password = (string)($_POST['password'] ?? '');
+
+    if (!verify_csrf()) {
+        $error = t('csrf_error');
+    } elseif ($email === '' || $password === '') {
         $error = t('fill_all_fields');
     } else {
-        try {
-            $user = null;
-            if (function_exists('findUserByEmail')) {
-                $user = findUserByEmail($email);
-            }
-            
-            if (!$user) {
-                $all = loadJSON(USERS_FILE);
-                foreach ($all as $u) {
-                    if ($u['email'] === $email) {
-                        $user = $u;
-                        break;
+        $user = findUserByEmail($email);
+        // Однакове повідомлення для невідомого email і невірного пароля,
+        // щоб не розкривати, які адреси зареєстровані
+        if ($user && verifyPassword($password, $user['password'])) {
+            if (password_needs_rehash($user['password'], PASSWORD_DEFAULT)) {
+                $newHash = hashPassword($password);
+                updateJSON(USERS_FILE, function (&$users) use ($user, $newHash) {
+                    foreach ($users as &$u) {
+                        if ($u['id'] === $user['id']) {
+                            $u['password'] = $newHash;
+                        }
                     }
-                }
+                });
             }
-
-            if ($user) {
-                if (verifyPassword($password, $user['password'])) {
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['user_email'] = $user['email'];
-                    $_SESSION['user_name'] = $user['name'];
-                    session_write_close();
-                    redirect('index.php');
-                } else {
-                    $error = t('invalid_password');
-                }
-            } else {
-                $error = t('user_not_found');
-            }
-        } catch (Exception $e) {
-            $error = t('auth_error') . ': ' . $e->getMessage();
+            session_regenerate_id(true);
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['last_activity'] = time();
+            unset($_SESSION['csrf_token']);
+            redirect('index.php');
+        } else {
+            $error = t('invalid_credentials');
         }
     }
 }
@@ -65,14 +61,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
             
             <form method="POST">
+                <?php echo csrf_field(); ?>
                 <div class="form-group">
                     <label for="email"><?php echo htmlspecialchars(t('email_label')); ?></label>
-                    <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
+                    <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" autocomplete="email" required>
                 </div>
                 
                 <div class="form-group">
                     <label for="password"><?php echo htmlspecialchars(t('password_label')); ?></label>
-                    <input type="password" id="password" name="password" required>
+                    <input type="password" id="password" name="password" autocomplete="current-password" required>
                 </div>
                 
                 <button type="submit" class="btn btn-primary"><?php echo htmlspecialchars(t('login_button')); ?></button>
